@@ -2,7 +2,7 @@ import AppError from "../../error/appError";
 import { TUser } from "./auth.interface";
 import { User } from "./auth.model";
 import httpStatus from "http-status";
-import { createToken } from "./auth.utils";
+import { createToken, generateVerificationCode, sendVerificationEmail } from "./auth.utils";
 import bcrypt from "bcrypt";
 
 const userCreatedFromDB = async (data: TUser) => {
@@ -13,9 +13,12 @@ const userCreatedFromDB = async (data: TUser) => {
 
     const password = await bcrypt.hash(data.password, 10);
 
+    const verificationCode = generateVerificationCode();
+
     const newData = {
         ...data,
-        password
+        password,
+        verificationCode
     };
 
     const jwtPayloads = {
@@ -25,9 +28,13 @@ const userCreatedFromDB = async (data: TUser) => {
 
     const accessToken = createToken(jwtPayloads, process.env.JWT_SECRET as string, 100);
 
-    const resualt = await User.create(newData);
+    const result = await User.create(newData);
+
+    // Send verification email
+    await sendVerificationEmail(data.email, verificationCode);
+
     return {
-        resualt,
+        result,
         accessToken
     };
 };
@@ -44,6 +51,9 @@ const loginUser = async (data: { email: string, password: string }) => {
     if (user.isDeleted) {
         throw AppError(httpStatus.BAD_REQUEST, "User is deleted");
     }
+    if (!user.isVerified) {
+        throw AppError(httpStatus.BAD_REQUEST, "Please verify your email first");
+    }
 
     const jwtPayloads = {
         email: user.email,
@@ -53,12 +63,32 @@ const loginUser = async (data: { email: string, password: string }) => {
     const expiresIn = 3600 * hours;
     const accessToken = createToken(jwtPayloads, process.env.JWT_SECRET as string, expiresIn);
 
+     const datas = await User.findOne({ email: data.email }).select('-password -verificationCode -__v');
+
     return {
-        accessToken
+        accessToken,
+        user: datas
     };
+};
+
+const verifyEmail = async (email: string, code: string) => {
+    const user = await User.findOne({ email, verificationCode: code });
+    if (!user) {
+        throw AppError(httpStatus.BAD_REQUEST, "Invalid verification code");
+    }
+    if (user.isVerified) {
+        throw AppError(httpStatus.BAD_REQUEST, "Email already verified");
+    }
+
+    user.isVerified = true;
+    user.verificationCode = undefined;
+    await user.save();
+
+    return { message: "Email verified successfully" };
 };
 
 export const UserService = {
     userCreatedFromDB,
-    loginUser
+    loginUser,
+    verifyEmail
 };

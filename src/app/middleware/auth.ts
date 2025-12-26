@@ -8,9 +8,9 @@ import { User } from "../module/authentication/auth.model";
 
 const auth = (...requiredRole: TUserRole[]) => {
     return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const token = req.headers.authorization //?.split(' ')[1];
+        const token = req.cookies.token;
         if (!token) {
-            throw AppError(httpStatus.BAD_REQUEST, 'You Have not auturized')
+            throw AppError(httpStatus.BAD_REQUEST, 'You Have not authorized')
         }
 
 
@@ -28,6 +28,10 @@ const auth = (...requiredRole: TUserRole[]) => {
 
         if (user.isDeleted) {
             throw AppError(httpStatus.BAD_REQUEST, 'User is deleted')
+        }
+
+        if (!user.isVerified) {
+            throw AppError(httpStatus.BAD_REQUEST, 'Please verify your email first')
         }
 
         req.user = decoded

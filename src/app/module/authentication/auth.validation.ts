@@ -10,7 +10,14 @@ const userCreatedValidationSchema = z.object({
     })
 })
 
+const verifyEmailValidationSchema = z.object({
+    body: z.object({
+        email: z.string().email(),
+        code: z.string().length(6)
+    })
+})
 
 export const UserCreatedValidation = {
-    userCreatedValidationSchema
+    userCreatedValidationSchema,
+    verifyEmailValidationSchema
 } 
