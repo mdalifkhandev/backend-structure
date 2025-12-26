@@ -15,6 +15,15 @@ router.post(
     '/login',
     UserController.userLogin
 )
+router.post(
+    '/verify',
+    validateRequest(UserCreatedValidation.verifyEmailValidationSchema),
+    UserController.verifyUserEmail
+)
+router.post(
+    '/logout',
+    UserController.logoutUser
+)
 
 
 
