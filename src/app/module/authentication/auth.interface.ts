@@ -3,5 +3,7 @@ export type TUser = {
     password: string,
     name: string,
     role: 'admin' | 'user',
-    isDeleted:boolean
+    isDeleted:boolean,
+    isVerified: boolean,
+    verificationCode?: string
 }

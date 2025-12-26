@@ -23,6 +23,13 @@ const userSchema = new Schema<TUser>({
     isDeleted:{
         type:Boolean,
         default:false
+    },
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
+    verificationCode: {
+        type: String
     }
 })
 
